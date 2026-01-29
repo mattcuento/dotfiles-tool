@@ -17,6 +17,12 @@ pub enum DotfilesError {
     #[error("Installation failed: {0}")]
     InstallFailed(String),
 
+    #[error("Installation failed: {0}")]
+    InstallationFailed(String),
+
+    #[error("Dependency missing: {0}")]
+    DependencyMissing(String),
+
     #[error("Symlink operation failed: {0}")]
     SymlinkFailed(String),
 
