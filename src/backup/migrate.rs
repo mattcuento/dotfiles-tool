@@ -74,7 +74,11 @@ pub fn migrate(options: &MigrationOptions) -> Result<MigrationResult> {
             if !options.dry_run {
                 let env_path = options.target.join(".env");
                 secrets::extract_to_env(&found_secrets, &env_path)?;
-                println!("✓ Extracted {} secrets to {:?}", found_secrets.len(), env_path);
+                println!(
+                    "✓ Extracted {} secrets to {:?}",
+                    found_secrets.len(),
+                    env_path
+                );
             }
 
             result.secrets_extracted = found_secrets.len();

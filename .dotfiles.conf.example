@@ -1,0 +1,49 @@
+# Dotfiles Tool Configuration
+#
+# This file is automatically created by `dotfiles setup` and saved to ~/.dotfiles.conf
+# You can edit this file manually to change your dotfiles configuration.
+#
+# After making changes, run `dotfiles doctor` to verify everything still works.
+
+# Path to your dotfiles repository
+# This is where your configuration files are stored
+dotfiles_dir = "/Users/yourusername/dotfiles"
+
+# XDG Base Directory for config files
+# Most modern tools store their config here
+xdg_config_home = "/Users/yourusername/.config"
+
+# Language version manager to use
+# Options: "Asdf", "Mise", "Rtx"
+#
+# - Asdf: Original, widely supported
+# - Mise: Modern, faster alternative to asdf
+# - Rtx: Older name for mise
+language_manager = "Asdf"
+
+# Symlink method for creating dotfile links
+# Options: "Stow", "Manual"
+#
+# - Stow: Uses GNU Stow (recommended, more robust)
+# - Manual: Creates symlinks directly (fallback if stow unavailable)
+symlink_method = "Stow"
+
+# Whether to install Oh My Zsh during setup
+# Set to true if you want oh-my-zsh installed automatically
+install_oh_my_zsh = false
+
+# Example configuration for different setups:
+#
+# macOS with mise:
+#   dotfiles_dir = "/Users/yourusername/dotfiles"
+#   xdg_config_home = "/Users/yourusername/.config"
+#   language_manager = "Mise"
+#   symlink_method = "Stow"
+#   install_oh_my_zsh = false
+#
+# Linux with ASDF:
+#   dotfiles_dir = "/home/yourusername/dotfiles"
+#   xdg_config_home = "/home/yourusername/.config"
+#   language_manager = "Asdf"
+#   symlink_method = "Stow"
+#   install_oh_my_zsh = true

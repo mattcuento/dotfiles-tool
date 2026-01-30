@@ -7,17 +7,26 @@ pub fn validate_toml(file_path: &Path) -> CheckResult {
     match fs::read_to_string(file_path) {
         Ok(content) => match toml::from_str::<toml::Value>(&content) {
             Ok(_) => CheckResult::pass(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 "Valid TOML syntax",
             ),
             Err(e) => CheckResult::error(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 format!("Invalid TOML syntax: {}", e),
                 Some("Fix the TOML syntax errors"),
             ),
         },
         Err(e) => CheckResult::error(
-            format!("Config:{}", file_path.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Config:{}",
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            ),
             format!("Failed to read file: {}", e),
             None::<String>,
         ),
@@ -29,17 +38,26 @@ pub fn validate_json(file_path: &Path) -> CheckResult {
     match fs::read_to_string(file_path) {
         Ok(content) => match serde_json::from_str::<serde_json::Value>(&content) {
             Ok(_) => CheckResult::pass(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 "Valid JSON syntax",
             ),
             Err(e) => CheckResult::error(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 format!("Invalid JSON syntax: {}", e),
                 Some("Fix the JSON syntax errors"),
             ),
         },
         Err(e) => CheckResult::error(
-            format!("Config:{}", file_path.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Config:{}",
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            ),
             format!("Failed to read file: {}", e),
             None::<String>,
         ),
@@ -51,17 +69,26 @@ pub fn validate_yaml(file_path: &Path) -> CheckResult {
     match fs::read_to_string(file_path) {
         Ok(content) => match serde_yaml::from_str::<serde_yaml::Value>(&content) {
             Ok(_) => CheckResult::pass(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 "Valid YAML syntax",
             ),
             Err(e) => CheckResult::error(
-                format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+                format!(
+                    "Config:{}",
+                    file_path.file_name().unwrap().to_string_lossy()
+                ),
                 format!("Invalid YAML syntax: {}", e),
                 Some("Fix the YAML syntax errors"),
             ),
         },
         Err(e) => CheckResult::error(
-            format!("Config:{}", file_path.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Config:{}",
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            ),
             format!("Failed to read file: {}", e),
             None::<String>,
         ),
@@ -75,11 +102,17 @@ pub fn validate_config(file_path: &Path) -> CheckResult {
         Some("json") => validate_json(file_path),
         Some("yaml") | Some("yml") => validate_yaml(file_path),
         Some(ext) => CheckResult::pass(
-            format!("Config:{}", file_path.file_name().unwrap().to_string_lossy()),
+            format!(
+                "Config:{}",
+                file_path.file_name().unwrap().to_string_lossy()
+            ),
             format!("Skipped validation for .{} file", ext),
         ),
         None => CheckResult::pass(
-            format!("Config:{}", file_path.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Config:{}",
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            ),
             "No extension, skipping validation",
         ),
     }
@@ -267,6 +300,9 @@ mod tests {
         let report = scan_directory(Path::new("/nonexistent/directory"));
 
         assert!(report.has_errors());
-        assert!(report.checks.iter().any(|c| c.message().contains("does not exist")));
+        assert!(report
+            .checks
+            .iter()
+            .any(|c| c.message().contains("does not exist")));
     }
 }

@@ -48,8 +48,9 @@ pub fn create_backup(source: &Path, backup_dir: Option<&Path>) -> Result<PathBuf
     let backup_parent = if let Some(dir) = backup_dir {
         dir.to_path_buf()
     } else {
-        dirs::home_dir()
-            .ok_or_else(|| DotfilesError::Config("Could not determine home directory".to_string()))?
+        dirs::home_dir().ok_or_else(|| {
+            DotfilesError::Config("Could not determine home directory".to_string())
+        })?
     };
 
     let backup_name = format!(".dotfiles-backup-{}", timestamp);
@@ -92,8 +93,9 @@ pub fn list_backups(backup_dir: Option<&Path>) -> Result<Vec<BackupInfo>> {
     let search_dir = if let Some(dir) = backup_dir {
         dir.to_path_buf()
     } else {
-        dirs::home_dir()
-            .ok_or_else(|| DotfilesError::Config("Could not determine home directory".to_string()))?
+        dirs::home_dir().ok_or_else(|| {
+            DotfilesError::Config("Could not determine home directory".to_string())
+        })?
     };
 
     if !search_dir.exists() {

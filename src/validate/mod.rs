@@ -9,10 +9,7 @@ use colored::Colorize;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CheckResult {
     /// Check passed successfully
-    Pass {
-        name: String,
-        message: String,
-    },
+    Pass { name: String, message: String },
     /// Check passed with warnings
     Warn {
         name: String,
@@ -216,11 +213,7 @@ impl CheckReport {
 
         // Summary
         output.push_str(&format!("\n{}\n", "Summary".bold().underline()));
-        output.push_str(&format!(
-            "  {} {} passed\n",
-            "✓".green(),
-            self.pass_count()
-        ));
+        output.push_str(&format!("  {} {} passed\n", "✓".green(), self.pass_count()));
 
         if self.warn_count() > 0 {
             output.push_str(&format!(
@@ -267,11 +260,7 @@ mod tests {
 
     #[test]
     fn test_check_result_warn() {
-        let result = CheckResult::warn(
-            "Test",
-            "Something might be wrong",
-            Some("Try fixing this"),
-        );
+        let result = CheckResult::warn("Test", "Something might be wrong", Some("Try fixing this"));
         assert!(!result.is_pass());
         assert!(result.is_warn());
         assert!(!result.is_error());

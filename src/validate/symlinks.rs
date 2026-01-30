@@ -11,10 +11,7 @@ pub fn validate_symlinks(source: &Path, target: &Path) -> CheckReport {
             if issues.is_empty() {
                 report.add(CheckResult::pass(
                     "Symlinks",
-                    format!(
-                        "All symlinks from {:?} to {:?} are valid",
-                        source, target
-                    ),
+                    format!("All symlinks from {:?} to {:?} are valid", source, target),
                 ));
             } else {
                 for (path, issue) in issues {
@@ -42,17 +39,29 @@ pub fn validate_symlinks(source: &Path, target: &Path) -> CheckReport {
 pub fn check_symlink(target: &Path, expected_source: &Path) -> CheckResult {
     if !target.exists() {
         return CheckResult::error(
-            format!("Symlink:{}", target.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Symlink:{}",
+                target.file_name().unwrap_or_default().to_string_lossy()
+            ),
             "Symlink does not exist",
-            Some(format!("Create symlink: ln -s {:?} {:?}", expected_source, target)),
+            Some(format!(
+                "Create symlink: ln -s {:?} {:?}",
+                expected_source, target
+            )),
         );
     }
 
     if !target.is_symlink() {
         return CheckResult::error(
-            format!("Symlink:{}", target.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Symlink:{}",
+                target.file_name().unwrap_or_default().to_string_lossy()
+            ),
             "Path exists but is not a symlink",
-            Some(format!("Remove file and create symlink: rm {:?} && ln -s {:?} {:?}", target, expected_source, target)),
+            Some(format!(
+                "Remove file and create symlink: rm {:?} && ln -s {:?} {:?}",
+                target, expected_source, target
+            )),
         );
     }
 
@@ -60,19 +69,34 @@ pub fn check_symlink(target: &Path, expected_source: &Path) -> CheckResult {
         Ok(actual_source) => {
             if actual_source == expected_source {
                 CheckResult::pass(
-                    format!("Symlink:{}", target.file_name().unwrap_or_default().to_string_lossy()),
+                    format!(
+                        "Symlink:{}",
+                        target.file_name().unwrap_or_default().to_string_lossy()
+                    ),
                     format!("Points to {:?}", actual_source),
                 )
             } else {
                 CheckResult::error(
-                    format!("Symlink:{}", target.file_name().unwrap_or_default().to_string_lossy()),
-                    format!("Points to {:?} instead of {:?}", actual_source, expected_source),
-                    Some(format!("Fix symlink: ln -sf {:?} {:?}", expected_source, target)),
+                    format!(
+                        "Symlink:{}",
+                        target.file_name().unwrap_or_default().to_string_lossy()
+                    ),
+                    format!(
+                        "Points to {:?} instead of {:?}",
+                        actual_source, expected_source
+                    ),
+                    Some(format!(
+                        "Fix symlink: ln -sf {:?} {:?}",
+                        expected_source, target
+                    )),
                 )
             }
         }
         Err(e) => CheckResult::error(
-            format!("Symlink:{}", target.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Symlink:{}",
+                target.file_name().unwrap_or_default().to_string_lossy()
+            ),
             format!("Failed to read symlink: {}", e),
             None::<String>,
         ),
@@ -86,22 +110,19 @@ mod tests {
 
     #[test]
     fn test_validate_symlinks_nonexistent_source() {
-        let report = validate_symlinks(
-            Path::new("/nonexistent/source"),
-            Path::new("/target"),
-        );
+        let report = validate_symlinks(Path::new("/nonexistent/source"), Path::new("/target"));
 
         // Should have one error for nonexistent source
         assert!(report.has_errors());
-        assert!(report.checks.iter().any(|c| c.message().contains("does not exist")));
+        assert!(report
+            .checks
+            .iter()
+            .any(|c| c.message().contains("does not exist")));
     }
 
     #[test]
     fn test_check_symlink_nonexistent() {
-        let result = check_symlink(
-            Path::new("/nonexistent/target"),
-            Path::new("/some/source"),
-        );
+        let result = check_symlink(Path::new("/nonexistent/target"), Path::new("/some/source"));
 
         assert!(result.is_error());
         assert!(result.message().contains("does not exist"));

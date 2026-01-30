@@ -161,10 +161,7 @@ pub fn extract_to_env(secrets: &[Secret], output_path: &Path) -> Result<()> {
 
     for secret in secrets {
         if seen_keys.insert(&secret.key) {
-            env_content.push_str(&format!(
-                "{}={}\n",
-                secret.key, secret.value
-            ));
+            env_content.push_str(&format!("{}={}\n", secret.key, secret.value));
         }
     }
 
@@ -178,22 +175,20 @@ pub fn summarize_secrets(secrets: &[Secret]) -> String {
     let mut by_file: HashMap<String, Vec<&Secret>> = HashMap::new();
 
     for secret in secrets {
-        by_file
-            .entry(secret.file.clone())
-            .or_default()
-            .push(secret);
+        by_file.entry(secret.file.clone()).or_default().push(secret);
     }
 
     let mut summary = String::new();
-    summary.push_str(&format!("Found {} secret(s) across {} file(s):\n\n", secrets.len(), by_file.len()));
+    summary.push_str(&format!(
+        "Found {} secret(s) across {} file(s):\n\n",
+        secrets.len(),
+        by_file.len()
+    ));
 
     for (file, file_secrets) in by_file.iter() {
         summary.push_str(&format!("{}:\n", file));
         for secret in file_secrets {
-            summary.push_str(&format!(
-                "  Line {}: {}\n",
-                secret.line_number, secret.key
-            ));
+            summary.push_str(&format!("  Line {}: {}\n", secret.line_number, secret.key));
         }
         summary.push('\n');
     }

@@ -47,9 +47,18 @@ pub fn run(dry_run: bool) -> Result<()> {
     // Step 3: Show summary and confirm
     println!();
     println!("{}", "📋 Setup Summary".bold().underline());
-    println!("  Dotfiles directory: {}", dotfiles_dir.display().to_string().cyan());
-    println!("  XDG config home: {}", xdg_config_home.display().to_string().cyan());
-    println!("  Language manager: {}", format!("{:?}", language_manager).cyan());
+    println!(
+        "  Dotfiles directory: {}",
+        dotfiles_dir.display().to_string().cyan()
+    );
+    println!(
+        "  XDG config home: {}",
+        xdg_config_home.display().to_string().cyan()
+    );
+    println!(
+        "  Language manager: {}",
+        format!("{:?}", language_manager).cyan()
+    );
 
     if selected_languages.is_empty() {
         println!("  Languages: {}", "None selected".yellow());
@@ -105,14 +114,20 @@ pub fn run(dry_run: bool) -> Result<()> {
         }
     } else {
         let vm = install::version_manager::detect().unwrap();
-        println!("{}", format!("  ✓ {} already installed", vm.display_name()).green());
+        println!(
+            "{}",
+            format!("  ✓ {} already installed", vm.display_name()).green()
+        );
     }
     println!();
 
     // 4c. Install essential packages
     println!("{}", "Installing essential packages...".bold());
     if dry_run {
-        println!("{}", "  Would install packages: stow, fzf, bat, fd, tree, nvim, tmux".yellow());
+        println!(
+            "{}",
+            "  Would install packages: stow, fzf, bat, fd, tree, nvim, tmux".yellow()
+        );
     } else {
         let status = install::packages::package_status();
         if !status.is_complete() {
@@ -131,20 +146,24 @@ pub fn run(dry_run: bool) -> Result<()> {
             for lang in &selected_languages {
                 println!("{}", format!("  Would install {}", lang).yellow());
             }
-        } else {
-            if let Some(vm) = install::version_manager::detect() {
-                for lang_name in &selected_languages {
-                    if let Some(installer) = language::get_installer(lang_name) {
-                        println!("  Installing {}...", installer.display_name());
-                        match installer.install(vm, None) {
-                            Ok(()) => println!("{}", format!("    ✓ {} installed", installer.display_name()).green()),
-                            Err(e) => println!("{}", format!("    ✗ Failed: {}", e).red()),
-                        }
+        } else if let Some(vm) = install::version_manager::detect() {
+            for lang_name in &selected_languages {
+                if let Some(installer) = language::get_installer(lang_name) {
+                    println!("  Installing {}...", installer.display_name());
+                    match installer.install(vm, None) {
+                        Ok(()) => println!(
+                            "{}",
+                            format!("    ✓ {} installed", installer.display_name()).green()
+                        ),
+                        Err(e) => println!("{}", format!("    ✗ Failed: {}", e).red()),
                     }
                 }
-            } else {
-                println!("{}", "  ⚠ No version manager available, skipping language installation".yellow());
             }
+        } else {
+            println!(
+                "{}",
+                "  ⚠ No version manager available, skipping language installation".yellow()
+            );
         }
         println!();
     }
@@ -152,7 +171,10 @@ pub fn run(dry_run: bool) -> Result<()> {
     // 4e. Create symlinks
     println!("{}", "Creating symlinks...".bold());
     if dry_run {
-        println!("{}", "  Would create symlinks from dotfiles to home".yellow());
+        println!(
+            "{}",
+            "  Would create symlinks from dotfiles to home".yellow()
+        );
     } else {
         // Determine which symlinker to use
         let status = install::packages::package_status();
@@ -191,7 +213,10 @@ pub fn run(dry_run: bool) -> Result<()> {
 
         let config_path = dirs::home_dir().unwrap().join(".dotfiles.conf");
         config.save(&config_path)?;
-        println!("{}", format!("  ✓ Configuration saved to {}", config_path.display()).green());
+        println!(
+            "{}",
+            format!("  ✓ Configuration saved to {}", config_path.display()).green()
+        );
         println!();
     }
 

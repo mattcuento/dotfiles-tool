@@ -46,10 +46,7 @@ pub fn scan_file(file_path: &Path) -> CheckResult {
 
                 // Check for hardcoded home paths
                 if patterns.home_path.is_match(line) {
-                    issues.push(format!(
-                        "Line {}: Found hardcoded home path",
-                        line_num + 1
-                    ));
+                    issues.push(format!("Line {}: Found hardcoded home path", line_num + 1));
                 }
             }
 
@@ -67,7 +64,10 @@ pub fn scan_file(file_path: &Path) -> CheckResult {
             }
         }
         Err(e) => CheckResult::error(
-            format!("Paths:{}", file_path.file_name().unwrap_or_default().to_string_lossy()),
+            format!(
+                "Paths:{}",
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            ),
             format!("Failed to read file: {}", e),
             None::<String>,
         ),
@@ -88,7 +88,9 @@ pub fn scan_directory(dir_path: &Path) -> CheckReport {
     }
 
     // Common config file extensions
-    let config_extensions = vec!["sh", "bash", "zsh", "fish", "rc", "conf", "config", "toml", "yaml", "yml"];
+    let config_extensions = vec![
+        "sh", "bash", "zsh", "fish", "rc", "conf", "config", "toml", "yaml", "yml",
+    ];
 
     match fs::read_dir(dir_path) {
         Ok(entries) => {
@@ -229,6 +231,9 @@ mod tests {
         let report = scan_directory(Path::new("/nonexistent/directory"));
 
         assert!(report.has_errors());
-        assert!(report.checks.iter().any(|c| c.message().contains("does not exist")));
+        assert!(report
+            .checks
+            .iter()
+            .any(|c| c.message().contains("does not exist")));
     }
 }

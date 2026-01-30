@@ -42,8 +42,8 @@ pub fn check_version_manager() -> CheckResult {
 /// Validates that a specific tool is installed
 pub fn check_tool(tool: &str) -> CheckResult {
     if crate::detect::tools::is_installed(tool) {
-        let path = crate::detect::tools::get_tool_path(tool)
-            .unwrap_or_else(|| "unknown".to_string());
+        let path =
+            crate::detect::tools::get_tool_path(tool).unwrap_or_else(|| "unknown".to_string());
         CheckResult::pass(tool, format!("Installed at {}", path))
     } else {
         let suggestion = match tool {
@@ -129,10 +129,10 @@ mod tests {
 
         if result.is_warn() {
             assert!(result.suggestion().is_some());
-            assert!(result
-                .suggestion()
-                .unwrap()
-                .contains("mise") || result.suggestion().unwrap().contains("asdf"));
+            assert!(
+                result.suggestion().unwrap().contains("mise")
+                    || result.suggestion().unwrap().contains("asdf")
+            );
         }
     }
 
@@ -185,10 +185,7 @@ mod tests {
         assert!(report.checks.iter().any(|c| c.name() == "Homebrew"));
 
         // Check that version manager is included
-        assert!(report
-            .checks
-            .iter()
-            .any(|c| c.name() == "Version Manager"));
+        assert!(report.checks.iter().any(|c| c.name() == "Version Manager"));
 
         // Check that stow is included
         assert!(report.checks.iter().any(|c| c.name() == "stow"));
