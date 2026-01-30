@@ -1,3 +1,5 @@
+pub mod backup;
+pub mod commands;
 pub mod core;
 pub mod detect;
 pub mod error;

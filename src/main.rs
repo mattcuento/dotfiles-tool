@@ -1,9 +1,6 @@
-use anyhow::Result;
 use clap::{Parser, Subcommand};
-
-mod core;
-mod detect;
-mod error;
+use dotfiles::commands;
+use dotfiles::Result;
 
 #[derive(Parser)]
 #[command(name = "dotfiles")]
@@ -33,23 +30,14 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Setup { dry_run } => {
-            if dry_run {
-                core::logger::log_info("Running in DRY-RUN mode (no changes will be made)");
-            }
-            core::logger::log_info("Setup command (placeholder)");
-            Ok(())
-        }
-        Commands::Doctor => {
-            core::logger::log_info("Doctor command (placeholder)");
-            Ok(())
-        }
+        Commands::Setup { dry_run } => commands::setup(dry_run),
+        Commands::Doctor => commands::doctor(),
         Commands::Migrate => {
-            core::logger::log_info("Migrate command (placeholder)");
+            println!("Migrate command (not yet implemented)");
             Ok(())
         }
         Commands::Backup => {
-            core::logger::log_info("Backup command (placeholder)");
+            println!("Backup command (not yet implemented)");
             Ok(())
         }
     }
