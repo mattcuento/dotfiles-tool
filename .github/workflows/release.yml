@@ -1,0 +1,151 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        default: 'v0.1.0'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Dotfiles Tool ${{ steps.get_version.outputs.version }}
+
+            ### Installation
+
+            **macOS (Apple Silicon):**
+            ```bash
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.version }}/dotfiles-macos-aarch64 -o dotfiles
+            chmod +x dotfiles
+            sudo mv dotfiles /usr/local/bin/
+            ```
+
+            **macOS (Intel):**
+            ```bash
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.version }}/dotfiles-macos-x86_64 -o dotfiles
+            chmod +x dotfiles
+            sudo mv dotfiles /usr/local/bin/
+            ```
+
+            **Linux:**
+            ```bash
+            curl -L https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.version }}/dotfiles-linux-x86_64 -o dotfiles
+            chmod +x dotfiles
+            sudo mv dotfiles /usr/local/bin/
+            ```
+
+            ### Verify Installation
+            ```bash
+            dotfiles --version
+            dotfiles doctor
+            ```
+
+            ### Quick Start
+            ```bash
+            dotfiles setup --dry-run  # Test without changes
+            dotfiles setup            # Run actual setup
+            ```
+          draft: false
+          prerelease: false
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: dotfiles
+            asset_name: dotfiles-macos-x86_64
+
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: dotfiles
+            asset_name: dotfiles-macos-aarch64
+
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: dotfiles
+            asset_name: dotfiles-linux-x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+          profile: minimal
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          asset_content_type: application/octet-stream
+
+      - name: Generate SHA256 checksum
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            shasum -a 256 target/${{ matrix.target }}/release/${{ matrix.artifact_name }} > ${{ matrix.asset_name }}.sha256
+          else
+            sha256sum target/${{ matrix.target }}/release/${{ matrix.artifact_name }} > ${{ matrix.asset_name }}.sha256
+          fi
+
+      - name: Upload SHA256 checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./${{ matrix.asset_name }}.sha256
+          asset_name: ${{ matrix.asset_name }}.sha256
+          asset_content_type: text/plain
