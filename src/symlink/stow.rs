@@ -124,6 +124,12 @@ impl Symlinker for StowSymlinker {
             target.to_str().unwrap(),
         ];
 
+        // Add exclusion patterns
+        for pattern in crate::symlink::EXCLUSIONS {
+            args.push("--ignore");
+            args.push(pattern);
+        }
+
         if self.dry_run {
             args.push("-n"); // no-op/dry-run
         }
@@ -238,5 +244,16 @@ mod tests {
         if let Some(p) = path {
             assert!(p.to_str().unwrap().contains("stow"));
         }
+    }
+
+    #[test]
+    fn test_stow_exclusions_constant() {
+        use crate::symlink::EXCLUSIONS;
+        assert!(EXCLUSIONS.contains(&".git"));
+        assert!(EXCLUSIONS.contains(&".DS_Store"));
+        assert!(EXCLUSIONS.contains(&".claude"));
+        assert!(EXCLUSIONS.contains(&"README.md"));
+        assert!(EXCLUSIONS.contains(&"LICENSE"));
+        assert_eq!(EXCLUSIONS.len(), 5);
     }
 }

@@ -4,6 +4,12 @@ pub mod stow;
 use crate::error::Result;
 use std::path::{Path, PathBuf};
 
+/// Files and directories to exclude from symlinking
+///
+/// These are commonly non-portable or repository-specific files that
+/// should not be symlinked to the home directory.
+pub const EXCLUSIONS: &[&str] = &[".git", ".DS_Store", ".claude", "README.md", "LICENSE"];
+
 /// Result of a symlink operation
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SymlinkStatus {

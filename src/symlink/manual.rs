@@ -146,6 +146,15 @@ impl Symlinker for ManualSymlinker {
                 let file_name = source_path
                     .file_name()
                     .ok_or_else(|| DotfilesError::SymlinkFailed("Invalid filename".to_string()))?;
+
+                // Skip excluded files
+                let file_name_str = file_name.to_str().ok_or_else(|| {
+                    DotfilesError::SymlinkFailed("Invalid UTF-8 in filename".to_string())
+                })?;
+                if crate::symlink::EXCLUSIONS.contains(&file_name_str) {
+                    continue;
+                }
+
                 let target_path = target.join(file_name);
 
                 let status = self.create_symlink(&source_path, &target_path)?;
@@ -194,6 +203,15 @@ impl Symlinker for ManualSymlinker {
                 let file_name = source_path
                     .file_name()
                     .ok_or_else(|| DotfilesError::SymlinkFailed("Invalid filename".to_string()))?;
+
+                // Skip excluded files
+                let file_name_str = file_name.to_str().ok_or_else(|| {
+                    DotfilesError::SymlinkFailed("Invalid UTF-8 in filename".to_string())
+                })?;
+                if crate::symlink::EXCLUSIONS.contains(&file_name_str) {
+                    continue;
+                }
+
                 let target_path = target.join(file_name);
 
                 let status = self.remove_symlink(&target_path)?;
@@ -369,5 +387,83 @@ mod tests {
 
         assert!(matches!(status, SymlinkStatus::Created { .. }));
         assert!(!target_file.exists());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_symlink_excludes_dot_git() {
+        let temp_dir = TempDir::new().unwrap();
+        let source_dir = temp_dir.path().join("source");
+        let target_dir = temp_dir.path().join("target");
+
+        // Create source with regular file and .git directory
+        fs::create_dir(&source_dir).unwrap();
+        fs::write(source_dir.join("file1.txt"), "content1").unwrap();
+        fs::create_dir(source_dir.join(".git")).unwrap();
+        fs::write(source_dir.join(".git/config"), "git config").unwrap();
+
+        fs::create_dir(&target_dir).unwrap();
+
+        let manual = ManualSymlinker::new();
+        let report = manual.symlink(&source_dir, &target_dir).unwrap();
+
+        // Should only create symlink for file1.txt, not .git
+        assert_eq!(report.created.len(), 1);
+        assert!(target_dir.join("file1.txt").is_symlink());
+        assert!(!target_dir.join(".git").exists());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_symlink_excludes_readme_and_license() {
+        let temp_dir = TempDir::new().unwrap();
+        let source_dir = temp_dir.path().join("source");
+        let target_dir = temp_dir.path().join("target");
+
+        // Create source with multiple excluded files
+        fs::create_dir(&source_dir).unwrap();
+        fs::write(source_dir.join(".bashrc"), "bashrc").unwrap();
+        fs::write(source_dir.join("README.md"), "readme").unwrap();
+        fs::write(source_dir.join("LICENSE"), "license").unwrap();
+        fs::write(source_dir.join(".DS_Store"), "ds").unwrap();
+
+        fs::create_dir(&target_dir).unwrap();
+
+        let manual = ManualSymlinker::new();
+        let report = manual.symlink(&source_dir, &target_dir).unwrap();
+
+        // Should only create symlink for .bashrc
+        assert_eq!(report.created.len(), 1);
+        assert!(target_dir.join(".bashrc").is_symlink());
+        assert!(!target_dir.join("README.md").exists());
+        assert!(!target_dir.join("LICENSE").exists());
+        assert!(!target_dir.join(".DS_Store").exists());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_remove_respects_exclusions() {
+        let temp_dir = TempDir::new().unwrap();
+        let source_dir = temp_dir.path().join("source");
+        let target_dir = temp_dir.path().join("target");
+
+        // Create source with excluded files
+        fs::create_dir(&source_dir).unwrap();
+        fs::write(source_dir.join("file1.txt"), "content").unwrap();
+        fs::write(source_dir.join(".git"), "git").unwrap();
+
+        // Create target with symlinks
+        fs::create_dir(&target_dir).unwrap();
+        std::os::unix::fs::symlink(source_dir.join("file1.txt"), target_dir.join("file1.txt"))
+            .unwrap();
+        std::os::unix::fs::symlink(source_dir.join(".git"), target_dir.join(".git")).unwrap();
+
+        let manual = ManualSymlinker::new();
+        let report = manual.remove(&source_dir, &target_dir).unwrap();
+
+        // Should only remove file1.txt, skip .git
+        assert_eq!(report.total(), 1);
+        assert!(!target_dir.join("file1.txt").exists());
+        assert!(target_dir.join(".git").exists());
     }
 }
