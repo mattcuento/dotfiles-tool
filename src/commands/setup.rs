@@ -189,12 +189,27 @@ pub fn run(dry_run: bool) -> Result<()> {
         };
 
         let home = dirs::home_dir().unwrap();
+
+        // First, create main dotfiles symlinks
         match symlinker.symlink(&dotfiles_dir, &home) {
             Ok(report) => {
                 println!("{}", format!("  ✓ {}", report.summary()).green());
             }
             Err(e) => {
                 println!("{}", format!("  ✗ Error creating symlinks: {}", e).red());
+            }
+        }
+
+        // Then, handle special directories that need individual file symlinks
+        println!("  Creating individual file symlinks for special directories...");
+        match symlink::symlink_individual_files(symlinker.as_ref(), &dotfiles_dir, &home) {
+            Ok(report) => {
+                if report.total() > 0 {
+                    println!("{}", format!("    ✓ {}", report.summary()).green());
+                }
+            }
+            Err(e) => {
+                println!("{}", format!("    ⚠ Warning: {}", e).yellow());
             }
         }
     }

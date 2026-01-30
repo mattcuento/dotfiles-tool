@@ -34,6 +34,25 @@ Support 5 languages with multiple version managers:
 - **User preferences**: Stored in `~/.dotfiles.conf` (not in repo)
 - **Migration scope**: Only configs currently in repo (zsh, nvim, tmux, git, etc.)
 
+### Symlink Strategy
+
+**Special handling for `.claude` directory:**
+
+Claude Code doesn't work well with a symlinked `.claude` directory. Instead, we use **individual file symlinks**:
+
+- `.claude/` directory is excluded from main symlink operation
+- The `.claude/` directory itself is a regular directory at `~/.claude`
+- Config files are individually symlinked:
+  - `~/.claude/CLAUDE.md` → `~/dotfiles/.claude/CLAUDE.md`
+  - `~/.claude/settings.json` → `~/dotfiles/.claude/settings.json`
+  - `~/.claude/settings.local.json` → `~/dotfiles/.claude/settings.local.json`
+- Runtime data (cache, debug, history, plans, plugins, etc.) remain as regular files in `~/.claude/`
+
+This approach allows:
+- Config files to be version controlled and shared across machines
+- Runtime/session data to remain local and not clutter the repository
+- Claude Code to function properly without symlink-related issues
+
 ## Project Structure
 
 ```

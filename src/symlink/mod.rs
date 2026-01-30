@@ -10,6 +10,12 @@ use std::path::{Path, PathBuf};
 /// should not be symlinked to the home directory.
 pub const EXCLUSIONS: &[&str] = &[".git", ".DS_Store", ".claude", "README.md", "LICENSE"];
 
+/// Special directories that need individual file symlinks instead of directory symlinks
+///
+/// These directories contain both config files (that should be in version control and symlinked)
+/// and runtime data (that should not be in version control)
+pub const INDIVIDUAL_FILE_SYMLINK_DIRS: &[&str] = &[".claude"];
+
 /// Result of a symlink operation
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SymlinkStatus {
@@ -202,6 +208,48 @@ pub fn validate_symlinks(source: &Path, target: &Path) -> Result<Vec<(PathBuf, S
     }
 
     Ok(issues)
+}
+
+/// Symlinks individual files from special directories that need file-level symlinks
+///
+/// This is used for directories like .claude where config files should be symlinked
+/// but runtime data should remain as regular files.
+pub fn symlink_individual_files(symlinker: &dyn Symlinker, dotfiles_dir: &Path, home_dir: &Path) -> Result<SymlinkReport> {
+    let mut report = SymlinkReport::new();
+
+    for special_dir in INDIVIDUAL_FILE_SYMLINK_DIRS {
+        let source_special = dotfiles_dir.join(special_dir);
+        let target_special = home_dir.join(special_dir);
+
+        // Skip if source directory doesn't exist
+        if !source_special.exists() {
+            continue;
+        }
+
+        // Ensure target directory exists
+        if !target_special.exists() {
+            std::fs::create_dir_all(&target_special)?;
+        }
+
+        // Symlink individual files from the special directory
+        let special_report = symlinker.symlink(&source_special, &target_special)?;
+
+        // Merge reports
+        for path in special_report.created {
+            report.created.push(path);
+        }
+        for path in special_report.already_exists {
+            report.already_exists.push(path);
+        }
+        for (path, reason) in special_report.conflicts {
+            report.conflicts.push((path, reason));
+        }
+        for (path, reason) in special_report.skipped {
+            report.skipped.push((path, reason));
+        }
+    }
+
+    Ok(report)
 }
 
 #[cfg(test)]
