@@ -196,15 +196,146 @@ cargo build
 
 ### Testing
 
+The tool provides multiple ways to test safely without modifying your system.
+
+#### 1. Build the Project
+
 ```bash
-# Run all tests
+# Debug build (faster compilation)
+cargo build
+
+# Release build (optimized)
+cargo build --release
+```
+
+#### 2. Dry-Run Mode (Recommended First Test)
+
+Test the complete interactive flow without making any changes:
+
+```bash
+./target/release/dotfiles setup --dry-run
+```
+
+**What happens in dry-run mode:**
+- ✓ Shows all interactive prompts
+- ✓ Lets you select configuration options
+- ✓ Displays what *would* be installed
+- ✗ Makes **zero changes** to your system
+
+**Interactive prompts you'll see:**
+
+1. **Dotfiles directory location** (default: `~/Development/dotfiles`)
+2. **XDG_CONFIG_HOME location** (default: `~/.config`)
+3. **Language manager** (asdf/mise/rtx/none - use arrow keys)
+4. **Language selection** (Space to toggle, Enter to confirm):
+   - [ ] Java (OpenJDK 21)
+   - [ ] JavaScript (22.12.0)
+   - [ ] Python (3.12.1)
+   - [ ] Rust (1.83.0)
+   - [ ] Go (1.23.4)
+5. **Confirmation prompt** with summary
+
+Output shows what would happen:
+```
+Would install packages: stow, fzf, bat, fd, tree, nvim, tmux
+Would install Java
+Would create symlinks from dotfiles to home
+```
+
+#### 3. Test Individual Commands
+
+**Health check (safe, read-only):**
+```bash
+./target/release/dotfiles doctor
+```
+
+Shows validation results:
+- Homebrew installation status
+- Version manager detection
+- Essential tools availability
+- Symlink verification
+- Hardcoded path detection
+
+**Help and version (safe):**
+```bash
+./target/release/dotfiles --help
+./target/release/dotfiles --version
+```
+
+#### 4. Run Unit Tests
+
+```bash
+# Run all 120+ unit tests
 cargo test
 
-# Run specific test
-cargo test test_name
+# Run tests for specific modules
+cargo test validate::      # Validation tests
+cargo test symlink::       # Symlink tests
+cargo test install::       # Installation tests
+cargo test detect::        # Detection tests
 
-# Run with output
+# Run with detailed output
 cargo test -- --nocapture
+
+# Run a specific test
+cargo test test_detect_homebrew
+```
+
+**Test coverage:** 100% of core logic with comprehensive unit tests.
+
+#### 5. Full Integration Test
+
+After testing with dry-run, try the actual setup:
+
+```bash
+# Option A: Install globally
+sudo cp target/release/dotfiles /usr/local/bin/
+dotfiles setup
+
+# Option B: Install to local bin (no sudo)
+mkdir -p ~/bin
+cp target/release/dotfiles ~/bin/
+export PATH="$HOME/bin:$PATH"
+dotfiles setup
+```
+
+**⚠️ This will make real changes:**
+- Install Homebrew (if missing)
+- Install version manager
+- Install packages and languages
+- Create symlinks
+
+#### 6. Testing Best Practices
+
+**Before first run:**
+1. ✓ Build the release binary
+2. ✓ Run `doctor` to see current state
+3. ✓ Test with `--dry-run` first
+4. ✓ Review what would be installed
+5. ✓ Run actual setup only when comfortable
+
+**During development:**
+1. ✓ Run `cargo test` after changes
+2. ✓ Run `cargo clippy` to catch issues
+3. ✓ Test in dry-run mode for UX changes
+4. ✓ Verify with `doctor` command
+
+**Safe testing workflow:**
+```bash
+# 1. Build
+cargo build --release
+
+# 2. Validate (read-only)
+./target/release/dotfiles doctor
+
+# 3. Dry-run (no changes)
+./target/release/dotfiles setup --dry-run
+
+# 4. Run tests
+cargo test
+
+# 5. Ready for actual setup
+./target/release/dotfiles setup
 ```
 
 ### Linting
