@@ -214,7 +214,11 @@ pub fn validate_symlinks(source: &Path, target: &Path) -> Result<Vec<(PathBuf, S
 ///
 /// This is used for directories like .claude where config files should be symlinked
 /// but runtime data should remain as regular files.
-pub fn symlink_individual_files(symlinker: &dyn Symlinker, dotfiles_dir: &Path, home_dir: &Path) -> Result<SymlinkReport> {
+pub fn symlink_individual_files(
+    symlinker: &dyn Symlinker,
+    dotfiles_dir: &Path,
+    home_dir: &Path,
+) -> Result<SymlinkReport> {
     let mut report = SymlinkReport::new();
 
     for special_dir in INDIVIDUAL_FILE_SYMLINK_DIRS {

@@ -35,6 +35,33 @@ pub fn validate_symlinks(source: &Path, target: &Path) -> CheckReport {
     report
 }
 
+/// Validates specific critical symlinks
+pub fn validate_critical_symlinks(home_dir: &Path, dotfiles_dir: &Path) -> CheckReport {
+    let mut report = CheckReport::new();
+
+    let symlinks = vec![
+        (".config", ".config"),
+        (".zshrc", ".zshrc"),
+        (".gitconfig", ".gitconfig"),
+        (".tmux.conf", ".tmux.conf"),
+        (".tmux", ".tmux"),
+        (".zsh", ".zsh"),
+    ];
+
+    for (link_name, source_name) in symlinks {
+        let link = home_dir.join(link_name);
+        let expected_source = dotfiles_dir.join(source_name);
+
+        // Only check if source exists in dotfiles
+        if expected_source.exists() {
+            let result = check_symlink(&link, &expected_source);
+            report.add(result);
+        }
+    }
+
+    report
+}
+
 /// Checks if a specific symlink points to the correct location
 pub fn check_symlink(target: &Path, expected_source: &Path) -> CheckResult {
     if !target.exists() {
@@ -106,7 +133,6 @@ pub fn check_symlink(target: &Path, expected_source: &Path) -> CheckResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
     #[test]
     fn test_validate_symlinks_nonexistent_source() {
@@ -185,5 +211,59 @@ mod tests {
         let result = check_symlink(&target, &source);
         assert!(result.is_error());
         assert!(result.message().contains("not a symlink"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_validate_critical_symlinks() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let home = temp_dir.path().join("home");
+        let dotfiles = temp_dir.path().join("dotfiles");
+
+        fs::create_dir(&home).unwrap();
+        fs::create_dir(&dotfiles).unwrap();
+
+        // Create some source files in dotfiles
+        fs::write(dotfiles.join(".zshrc"), "test").unwrap();
+        fs::write(dotfiles.join(".gitconfig"), "test").unwrap();
+
+        // Create symlinks
+        std::os::unix::fs::symlink(&dotfiles.join(".zshrc"), &home.join(".zshrc")).unwrap();
+        std::os::unix::fs::symlink(&dotfiles.join(".gitconfig"), &home.join(".gitconfig")).unwrap();
+
+        let report = validate_critical_symlinks(&home, &dotfiles);
+
+        // Should have checks for the symlinks that exist in dotfiles
+        assert!(report.checks.len() >= 2);
+        assert!(report
+            .checks
+            .iter()
+            .any(|c| c.name().contains(".zshrc") && c.is_pass()));
+        assert!(report
+            .checks
+            .iter()
+            .any(|c| c.name().contains(".gitconfig") && c.is_pass()));
+    }
+
+    #[test]
+    fn test_validate_critical_symlinks_missing_sources() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        let temp_dir = TempDir::new().unwrap();
+        let home = temp_dir.path().join("home");
+        let dotfiles = temp_dir.path().join("dotfiles");
+
+        fs::create_dir(&home).unwrap();
+        fs::create_dir(&dotfiles).unwrap();
+
+        // Don't create any sources in dotfiles
+        let report = validate_critical_symlinks(&home, &dotfiles);
+
+        // Should have no checks if sources don't exist
+        assert_eq!(report.checks.len(), 0);
     }
 }

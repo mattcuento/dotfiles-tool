@@ -105,15 +105,31 @@ jobs:
             ```
 
             ### Quick Start
+
+            **Fresh system:**
+            ```bash
+            dotfiles init             # Clone dotfiles repository
+            dotfiles setup            # Complete setup (installs tools, creates symlinks)
+            dotfiles doctor           # Verify health
+            ```
+
+            **Existing dotfiles:**
             ```bash
             dotfiles setup --dry-run  # Test without changes
             dotfiles setup            # Run actual setup
+            dotfiles doctor           # Verify configuration
             ```
 
             ### Features
+            - 🌟 **Bootstrap mode** - Fresh system setup with `dotfiles init`
             - 🚀 Interactive setup with guided prompts
             - 🔧 Automatic dependency installation
+            - 📦 Categorized package management (development, cloud, productivity tools)
             - 🌐 Multi-language support (Java, Node.js, Python, Rust, Go)
             - 🔗 Smart symlinking with GNU Stow
-            - 🏥 Health checks with `doctor` command
+            - 🏥 Comprehensive health checks with `doctor` command
+            - 🤖 Claude Code integration (.claude repo management)
+            - 🔨 TPM (tmux plugin manager) auto-installation
+            - 🐚 Shell integration for automated syncing
+            - 💻 iTerm2 configuration validation (macOS)
             - 🎨 Colored output with clear feedback

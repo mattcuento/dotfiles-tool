@@ -1,6 +1,9 @@
+pub mod claude;
 pub mod configs;
 pub mod dependencies;
+pub mod iterm;
 pub mod paths;
+pub mod shell;
 pub mod symlinks;
 
 use colored::Colorize;

@@ -13,6 +13,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Bootstrap dotfiles on a fresh system
+    Init,
     /// Run interactive setup
     Setup {
         #[arg(long)]
@@ -30,6 +32,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Init => commands::init(),
         Commands::Setup { dry_run } => commands::setup(dry_run),
         Commands::Doctor => commands::doctor(),
         Commands::Migrate => {

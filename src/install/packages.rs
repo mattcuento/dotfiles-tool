@@ -19,6 +19,34 @@ pub const OPTIONAL_PACKAGES: &[&str] = &[
     "wget",    // File downloader
 ];
 
+/// Development tools
+pub const DEVELOPMENT_PACKAGES: &[&str] = &[
+    "gh",     // GitHub CLI
+    "jq",     // JSON processor
+    "yq",     // YAML processor
+    "httpie", // HTTP client
+    "just",   // Command runner
+];
+
+/// Cloud and infrastructure tools
+pub const CLOUD_PACKAGES: &[&str] = &[
+    "awscli",    // AWS CLI
+    "opentofu",  // Infrastructure as Code
+    "terraform", // Infrastructure as Code (legacy)
+];
+
+/// Productivity tools
+pub const PRODUCTIVITY_PACKAGES: &[&str] = &[
+    "obsidian",                  // Note-taking (cask)
+    "yakitrak/tap/obsidian-cli", // Obsidian CLI
+];
+
+/// Additional editors and tools
+pub const EDITOR_PACKAGES: &[&str] = &[
+    "helix",   // Alternative editor
+    "lazygit", // Git TUI
+];
+
 /// Installs a single package via Homebrew (idempotent)
 pub fn install_package(package: &str) -> Result<()> {
     if crate::install::homebrew::is_package_installed(package) {
@@ -88,6 +116,138 @@ pub fn check_essential_packages() -> Vec<String> {
         .collect()
 }
 
+/// Installs development packages
+pub fn install_development_packages() -> Result<Vec<String>> {
+    let mut installed = Vec::new();
+
+    println!("Installing development packages...");
+
+    for package in DEVELOPMENT_PACKAGES {
+        match install_package(package) {
+            Ok(()) => {
+                installed.push(package.to_string());
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to install {}: {}", package, e);
+            }
+        }
+    }
+
+    if !installed.is_empty() {
+        println!("✓ Installed {} development packages", installed.len());
+    }
+
+    Ok(installed)
+}
+
+/// Checks development packages
+pub fn check_development_packages() -> Vec<String> {
+    DEVELOPMENT_PACKAGES
+        .iter()
+        .filter(|pkg| !crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect()
+}
+
+/// Installs cloud packages
+pub fn install_cloud_packages() -> Result<Vec<String>> {
+    let mut installed = Vec::new();
+
+    println!("Installing cloud packages...");
+
+    for package in CLOUD_PACKAGES {
+        match install_package(package) {
+            Ok(()) => {
+                installed.push(package.to_string());
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to install {}: {}", package, e);
+            }
+        }
+    }
+
+    if !installed.is_empty() {
+        println!("✓ Installed {} cloud packages", installed.len());
+    }
+
+    Ok(installed)
+}
+
+/// Checks cloud packages
+pub fn check_cloud_packages() -> Vec<String> {
+    CLOUD_PACKAGES
+        .iter()
+        .filter(|pkg| !crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect()
+}
+
+/// Installs productivity packages
+pub fn install_productivity_packages() -> Result<Vec<String>> {
+    let mut installed = Vec::new();
+
+    println!("Installing productivity packages...");
+
+    for package in PRODUCTIVITY_PACKAGES {
+        match install_package(package) {
+            Ok(()) => {
+                installed.push(package.to_string());
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to install {}: {}", package, e);
+            }
+        }
+    }
+
+    if !installed.is_empty() {
+        println!("✓ Installed {} productivity packages", installed.len());
+    }
+
+    Ok(installed)
+}
+
+/// Checks productivity packages
+pub fn check_productivity_packages() -> Vec<String> {
+    PRODUCTIVITY_PACKAGES
+        .iter()
+        .filter(|pkg| !crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect()
+}
+
+/// Installs editor packages
+pub fn install_editor_packages() -> Result<Vec<String>> {
+    let mut installed = Vec::new();
+
+    println!("Installing editor packages...");
+
+    for package in EDITOR_PACKAGES {
+        match install_package(package) {
+            Ok(()) => {
+                installed.push(package.to_string());
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to install {}: {}", package, e);
+            }
+        }
+    }
+
+    if !installed.is_empty() {
+        println!("✓ Installed {} editor packages", installed.len());
+    }
+
+    Ok(installed)
+}
+
+/// Checks editor packages
+pub fn check_editor_packages() -> Vec<String> {
+    EDITOR_PACKAGES
+        .iter()
+        .filter(|pkg| !crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect()
+}
+
 /// Returns a summary of package installation status
 pub fn package_status() -> PackageStatus {
     let missing_essential: Vec<String> = ESSENTIAL_PACKAGES
@@ -108,10 +268,38 @@ pub fn package_status() -> PackageStatus {
         .map(|pkg| pkg.to_string())
         .collect();
 
+    let installed_development: Vec<String> = DEVELOPMENT_PACKAGES
+        .iter()
+        .filter(|pkg| crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect();
+
+    let installed_cloud: Vec<String> = CLOUD_PACKAGES
+        .iter()
+        .filter(|pkg| crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect();
+
+    let installed_productivity: Vec<String> = PRODUCTIVITY_PACKAGES
+        .iter()
+        .filter(|pkg| crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect();
+
+    let installed_editors: Vec<String> = EDITOR_PACKAGES
+        .iter()
+        .filter(|pkg| crate::install::homebrew::is_package_installed(pkg))
+        .map(|pkg| pkg.to_string())
+        .collect();
+
     PackageStatus {
         missing_essential,
         installed_essential,
         installed_optional,
+        installed_development,
+        installed_cloud,
+        installed_productivity,
+        installed_editors,
     }
 }
 
@@ -121,6 +309,10 @@ pub struct PackageStatus {
     pub missing_essential: Vec<String>,
     pub installed_essential: Vec<String>,
     pub installed_optional: Vec<String>,
+    pub installed_development: Vec<String>,
+    pub installed_cloud: Vec<String>,
+    pub installed_productivity: Vec<String>,
+    pub installed_editors: Vec<String>,
 }
 
 impl PackageStatus {
@@ -131,7 +323,12 @@ impl PackageStatus {
 
     /// Returns the total number of installed packages
     pub fn total_installed(&self) -> usize {
-        self.installed_essential.len() + self.installed_optional.len()
+        self.installed_essential.len()
+            + self.installed_optional.len()
+            + self.installed_development.len()
+            + self.installed_cloud.len()
+            + self.installed_productivity.len()
+            + self.installed_editors.len()
     }
 }
 
@@ -228,7 +425,12 @@ mod tests {
 
         assert_eq!(
             total,
-            status.installed_essential.len() + status.installed_optional.len()
+            status.installed_essential.len()
+                + status.installed_optional.len()
+                + status.installed_development.len()
+                + status.installed_cloud.len()
+                + status.installed_productivity.len()
+                + status.installed_editors.len()
         );
     }
 }

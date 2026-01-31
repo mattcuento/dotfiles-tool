@@ -2,7 +2,7 @@ use crate::core::{config::Config, prompt};
 use crate::error::Result;
 use crate::{install, language, symlink};
 use colored::Colorize;
-use dialoguer::{Confirm, MultiSelect};
+use dialoguer::{Confirm, Input, MultiSelect};
 
 /// Runs the interactive setup command
 pub fn run(dry_run: bool) -> Result<()> {
@@ -168,7 +168,29 @@ pub fn run(dry_run: bool) -> Result<()> {
         println!();
     }
 
-    // 4e. Create symlinks
+    // 4e. Install TPM and setup Mason info
+    println!("{}", "Installing development tools...".bold());
+    if dry_run {
+        println!("{}", "  Would install TPM (tmux plugin manager)".yellow());
+        println!(
+            "{}",
+            "  Would display Mason (nvim LSP manager) info".yellow()
+        );
+    } else {
+        let home = dirs::home_dir().unwrap();
+        match install::tools::install_tpm(&home) {
+            Ok(()) => {}
+            Err(e) => println!("{}", format!("  ⚠ TPM installation failed: {}", e).yellow()),
+        }
+
+        match install::tools::setup_mason_info() {
+            Ok(()) => {}
+            Err(e) => println!("{}", format!("  ⚠ Note: {}", e).yellow()),
+        }
+    }
+    println!();
+
+    // 4f. Create symlinks
     println!("{}", "Creating symlinks...".bold());
     if dry_run {
         println!(
@@ -211,6 +233,76 @@ pub fn run(dry_run: bool) -> Result<()> {
             Err(e) => {
                 println!("{}", format!("    ⚠ Warning: {}", e).yellow());
             }
+        }
+    }
+    println!();
+
+    // 4g. Configure shell integration
+    println!("{}", "Configuring shell integration...".bold());
+    if dry_run {
+        println!(
+            "{}",
+            "  Would add check-claude-changes.sh to .zshrc".yellow()
+        );
+    } else {
+        let home = dirs::home_dir().unwrap();
+        let zshrc = home.join(".zshrc");
+        let script_path = dotfiles_dir.join("scripts/check-claude-changes.sh");
+
+        if script_path.exists() {
+            match install::shell::ensure_script_sourced(
+                &zshrc,
+                &script_path,
+                "check-claude-changes.sh",
+            ) {
+                Ok(()) => {}
+                Err(e) => println!(
+                    "{}",
+                    format!("  ⚠ Shell integration failed: {}", e).yellow()
+                ),
+            }
+        } else {
+            println!(
+                "{}",
+                "  ⚠ check-claude-changes.sh not found in dotfiles/scripts".yellow()
+            );
+        }
+    }
+    println!();
+
+    // 4h. Clone claude repository if needed
+    println!("{}", "Checking claude repository...".bold());
+    if dry_run {
+        println!("{}", "  Would clone claude repository if missing".yellow());
+    } else {
+        let home = dirs::home_dir().unwrap();
+        let claude_dir = home.join(".claude");
+
+        if !claude_dir.exists() {
+            println!("  Claude repository not found, cloning...");
+
+            // Prompt for claude repo URL (or use default)
+            let claude_repo_url: String = Input::new()
+                .with_prompt("Claude repository URL")
+                .default("https://github.com/YOUR_USERNAME/claudefiles.git".to_string())
+                .interact_text()
+                .map_err(|e| crate::error::DotfilesError::Config(format!("Prompt error: {}", e)))?;
+
+            match install::repos::clone_claude_repo(&claude_repo_url) {
+                Ok(()) => {}
+                Err(e) => println!("{}", format!("  ⚠ Claude clone failed: {}", e).yellow()),
+            }
+        } else if !install::repos::is_git_repo(&claude_dir) {
+            println!(
+                "{}",
+                "  ⚠ ~/.claude exists but is not a git repository".yellow()
+            );
+            println!(
+                "{}",
+                "    Consider initializing: cd ~/.claude && git init".yellow()
+            );
+        } else {
+            println!("{}", "  ✓ Claude repository exists".green());
         }
     }
     println!();
