@@ -39,16 +39,147 @@ pub fn check_version_manager() -> CheckResult {
     }
 }
 
+/// Validates that git is installed and shows version
+pub fn check_git_installation() -> CheckResult {
+    if !crate::detect::tools::is_installed("git") {
+        return CheckResult::error(
+            "Git",
+            "Not installed",
+            Some("Install with: brew install git"),
+        );
+    }
+
+    // Get git version
+    let version = std::process::Command::new("git")
+        .arg("--version")
+        .output()
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown version".to_string());
+
+    let path = crate::detect::tools::get_tool_path("git")
+        .unwrap_or_else(|| "unknown".to_string());
+
+    CheckResult::pass("Git", format!("Installed at {} ({})", path, version))
+}
+
+/// Validates that delta is installed
+pub fn check_delta_installation() -> CheckResult {
+    // Note: package name is "git-delta" but binary is "delta"
+    if crate::detect::tools::is_installed("delta") {
+        let path = crate::detect::tools::get_tool_path("delta")
+            .unwrap_or_else(|| "unknown".to_string());
+        CheckResult::pass("Delta", format!("Installed at {}", path))
+    } else {
+        CheckResult::error(
+            "Delta",
+            "Not installed",
+            Some("Install with: brew install git-delta"),
+        )
+    }
+}
+
+/// Validates that git is configured to use delta as pager
+pub fn check_git_delta_config() -> CheckResult {
+    // Only check if both git and delta are installed
+    if !crate::detect::tools::is_installed("git") {
+        return CheckResult::pass("Git Delta Config", "Skipped (git not installed)");
+    }
+
+    if !crate::detect::tools::is_installed("delta") {
+        return CheckResult::pass("Git Delta Config", "Skipped (delta not installed)");
+    }
+
+    // Check if core.pager is set to delta
+    let output = std::process::Command::new("git")
+        .args(["config", "--get", "core.pager"])
+        .output();
+
+    match output {
+        Ok(result) if result.status.success() => {
+            let pager = String::from_utf8_lossy(&result.stdout).trim().to_string();
+            if pager.contains("delta") {
+                CheckResult::pass("Git Delta Config", "Delta configured as git pager")
+            } else {
+                CheckResult::warn(
+                    "Git Delta Config",
+                    format!("Git pager is '{}', not delta", pager),
+                    Some("Set with: git config --global core.pager delta\nOr create ~/.config/git/config with delta configuration"),
+                )
+            }
+        }
+        Ok(_) | Err(_) => {
+            CheckResult::warn(
+                "Git Delta Config",
+                "core.pager not configured",
+                Some("Set with: git config --global core.pager delta\nOr create ~/.config/git/config with delta configuration"),
+            )
+        }
+    }
+}
+
+/// Validates that git interactive commands are configured to use delta
+pub fn check_git_delta_interactive() -> CheckResult {
+    // Only check if both git and delta are installed
+    if !crate::detect::tools::is_installed("git") {
+        return CheckResult::pass(
+            "Git Delta Interactive",
+            "Skipped (git not installed)",
+        );
+    }
+
+    if !crate::detect::tools::is_installed("delta") {
+        return CheckResult::pass(
+            "Git Delta Interactive",
+            "Skipped (delta not installed)",
+        );
+    }
+
+    // Check if interactive.diffFilter is set to delta
+    let output = std::process::Command::new("git")
+        .args(["config", "--get", "interactive.difffilter"])
+        .output();
+
+    match output {
+        Ok(result) if result.status.success() => {
+            let filter = String::from_utf8_lossy(&result.stdout).trim().to_string();
+            if filter.contains("delta") {
+                CheckResult::pass(
+                    "Git Delta Interactive",
+                    "Delta configured for interactive diffs",
+                )
+            } else {
+                CheckResult::pass(
+                    "Git Delta Interactive",
+                    format!("Using custom filter: {}", filter),
+                )
+            }
+        }
+        Ok(_) | Err(_) => {
+            // This is optional, so just pass if not configured
+            CheckResult::pass(
+                "Git Delta Interactive",
+                "Not configured (optional)",
+            )
+        }
+    }
+}
+
 /// Validates that a specific tool is installed
 pub fn check_tool(tool: &str) -> CheckResult {
-    if crate::detect::tools::is_installed(tool) {
-        let path =
-            crate::detect::tools::get_tool_path(tool).unwrap_or_else(|| "unknown".to_string());
+    // Special handling for git-delta package (binary is named "delta")
+    let binary_name = if tool == "git-delta" { "delta" } else { tool };
+
+    if crate::detect::tools::is_installed(binary_name) {
+        let path = crate::detect::tools::get_tool_path(binary_name)
+            .unwrap_or_else(|| "unknown".to_string());
         CheckResult::pass(tool, format!("Installed at {}", path))
     } else {
         let suggestion = match tool {
             "stow" => "brew install stow",
             "git" => "brew install git",
+            "git-delta" => "brew install git-delta",
             "fzf" => "brew install fzf",
             "bat" => "brew install bat",
             "fd" => "brew install fd",
@@ -77,9 +208,18 @@ pub fn validate_all() -> CheckReport {
     // Check version manager
     report.add(check_version_manager());
 
+    // Check git (before other tools that might use it)
+    report.add(check_git_installation());
+
+    // Check delta
+    report.add(check_delta_installation());
+
     // Check essential tools
     for tool in crate::install::packages::ESSENTIAL_PACKAGES {
-        report.add(check_tool(tool));
+        // Skip git and git-delta since we have specialized checks
+        if tool != &"git" && tool != &"git-delta" {
+            report.add(check_tool(tool));
+        }
     }
 
     report
@@ -205,5 +345,72 @@ mod tests {
                 assert!(suggestion.contains(tool));
             }
         }
+    }
+
+    #[test]
+    fn test_check_git_installation() {
+        let result = check_git_installation();
+
+        // Should be either pass or error
+        assert!(result.is_pass() || result.is_error());
+        assert_eq!(result.name(), "Git");
+
+        if result.is_error() {
+            assert!(result.suggestion().is_some());
+            assert!(result.suggestion().unwrap().contains("brew install git"));
+        }
+    }
+
+    #[test]
+    fn test_check_delta_installation() {
+        let result = check_delta_installation();
+
+        // Should be either pass or error
+        assert!(result.is_pass() || result.is_error());
+        assert_eq!(result.name(), "Delta");
+
+        if result.is_error() {
+            assert!(result.suggestion().is_some());
+            assert!(result.suggestion().unwrap().contains("brew install git-delta"));
+        }
+    }
+
+    #[test]
+    fn test_check_git_delta_config() {
+        let result = check_git_delta_config();
+
+        // Should be pass or warn
+        assert!(result.is_pass() || result.is_warn());
+        assert_eq!(result.name(), "Git Delta Config");
+    }
+
+    #[test]
+    fn test_check_git_delta_interactive() {
+        let result = check_git_delta_interactive();
+
+        // Should be pass (always, since it's optional)
+        assert!(result.is_pass());
+        assert_eq!(result.name(), "Git Delta Interactive");
+    }
+
+    #[test]
+    fn test_check_tool_git_delta_mapping() {
+        // Test that git-delta package name maps to delta binary
+        let result = check_tool("git-delta");
+        assert_eq!(result.name(), "git-delta");
+
+        if result.is_error() {
+            assert!(result.suggestion().is_some());
+            assert!(result.suggestion().unwrap().contains("brew install git-delta"));
+        }
+    }
+
+    #[test]
+    fn test_validate_all_includes_git_checks() {
+        let report = validate_all();
+
+        // Should include specialized git and delta checks
+        assert!(report.checks.iter().any(|c| c.name() == "Git"));
+        assert!(report.checks.iter().any(|c| c.name() == "Delta"));
     }
 }

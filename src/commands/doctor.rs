@@ -108,6 +108,14 @@ pub fn run() -> Result<()> {
 
     println!();
 
+    // 1c. Check git delta configuration (if git is installed)
+    if crate::detect::tools::is_installed("git") {
+        println!("{}", "Checking git delta configuration...".bold());
+        overall_report.add(validate::dependencies::check_git_delta_config());
+        overall_report.add(validate::dependencies::check_git_delta_interactive());
+        println!();
+    }
+
     // 2. Validate symlinks (if dotfiles dir exists)
     if let Some(home) = dirs::home_dir() {
         let dotfiles_dir = home.join("dotfiles");

@@ -2,19 +2,20 @@ use crate::error::Result;
 
 /// Essential packages to install for dotfiles management
 pub const ESSENTIAL_PACKAGES: &[&str] = &[
-    "stow", // GNU Stow for symlink management
-    "fzf",  // Fuzzy finder
-    "bat",  // Better cat
-    "fd",   // Better find
-    "tree", // Directory tree viewer
-    "nvim", // Neovim editor
-    "tmux", // Terminal multiplexer
+    "stow",      // GNU Stow for symlink management
+    "fzf",       // Fuzzy finder
+    "bat",       // Better cat
+    "fd",        // Better find
+    "tree",      // Directory tree viewer
+    "nvim",      // Neovim editor
+    "tmux",      // Terminal multiplexer
+    "git",       // Version control
+    "git-delta", // Syntax-highlighting git pager
 ];
 
 /// Optional but recommended packages
 pub const OPTIONAL_PACKAGES: &[&str] = &[
     "ripgrep", // Better grep
-    "git",     // Version control
     "curl",    // HTTP client
     "wget",    // File downloader
 ];
@@ -338,7 +339,7 @@ mod tests {
 
     #[test]
     fn test_essential_packages_list() {
-        assert_eq!(ESSENTIAL_PACKAGES.len(), 7);
+        assert_eq!(ESSENTIAL_PACKAGES.len(), 9);
         assert!(ESSENTIAL_PACKAGES.contains(&"stow"));
         assert!(ESSENTIAL_PACKAGES.contains(&"fzf"));
         assert!(ESSENTIAL_PACKAGES.contains(&"bat"));
@@ -346,13 +347,14 @@ mod tests {
         assert!(ESSENTIAL_PACKAGES.contains(&"tree"));
         assert!(ESSENTIAL_PACKAGES.contains(&"nvim"));
         assert!(ESSENTIAL_PACKAGES.contains(&"tmux"));
+        assert!(ESSENTIAL_PACKAGES.contains(&"git"));
+        assert!(ESSENTIAL_PACKAGES.contains(&"git-delta"));
     }
 
     #[test]
     fn test_optional_packages_list() {
-        assert_eq!(OPTIONAL_PACKAGES.len(), 4);
+        assert_eq!(OPTIONAL_PACKAGES.len(), 3);
         assert!(OPTIONAL_PACKAGES.contains(&"ripgrep"));
-        assert!(OPTIONAL_PACKAGES.contains(&"git"));
         assert!(OPTIONAL_PACKAGES.contains(&"curl"));
         assert!(OPTIONAL_PACKAGES.contains(&"wget"));
     }
